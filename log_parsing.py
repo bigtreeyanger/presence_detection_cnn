@@ -17,7 +17,7 @@ class ParseDataFile:
                                                                 'nr, nc, rssi, rssi1, rssi2, rssi3, payload_len')
 
     def parse(self, filename, has_payload=False):
-        print("reading file "+filename+" has payload? "+str(has_payload))
+        print("reading file {}, this log has payload? {}".format(filename, has_payload))
         byte_file = np.fromfile(filename, np.uint8)
         file_size = byte_file.shape[0]
         print('file size '+str(file_size))

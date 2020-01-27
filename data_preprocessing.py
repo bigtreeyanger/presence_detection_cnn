@@ -3,7 +3,7 @@
 import numpy as np
 import time
 from os import path
-import wifi_data_config as conf
+import train_test_conf as conf
 import argparse
 from global_sp_func import sp_func, reshape_func, shape_conversion, append_array
 
@@ -42,12 +42,12 @@ class DataPreprocess:
     def load_image(self, training_mode, from_file, train_data_class={}, test_data_class={}):
         x_train, x_test, y_train, y_test = np.array([]), np.array([]), np.array([]), np.array([])
         self.classes_num = {}
-        for label_name, o in self.label:
+        for label_name, o in self.label.items():
             if o not in self.classes_num.keys():
                 self.classes_num[o] = {'train_num': 0, 'test_num': 0}
             if training_mode:
                 if from_file:
-                    filename = self.file_prefix+'training_'+str(k)+'.dat'
+                    filename = self.file_prefix+'training_'+str(o)+'.dat'
                     print('train filename '+filename)
                     temp_image = np.fromfile(filename, dtype=np.complex64)
                     temp_image = np.reshape(temp_image, (-1,) + self.data_shape)
@@ -59,10 +59,10 @@ class DataPreprocess:
                 x_train = append_array(x_train, temp_image)
                 y_train = append_array(y_train, temp_label)
                 if from_file:
-                    test_filename = self.file_prefix+'training_test_'+str(k)+'.dat'
+                    test_filename = self.file_prefix+'training_test_'+str(o)+'.dat'
             else:
                 if from_file:
-                    test_filename = self.file_prefix+'test_'+str(k)+'.dat'
+                    test_filename = self.file_prefix+'test_'+str(o)+'.dat'
             if from_file:
                 print('test filename '+test_filename)
                 temp_image = np.fromfile(test_filename, dtype=np.complex64)
@@ -117,14 +117,20 @@ class DataPreprocess:
                 for idx in self.no_label_test[key]:
                     self.no_label_test[key][idx] = shape_conversion(self.no_label_test[key][idx], self.output_shape[0])
 
-    def save2file(self):
-        if self.x_train.shape[0]>0:
-            self.x_train.tofile(self.file_prefix+"x_train.dat")
-            self.y_train.tofile(self.file_prefix+"y_train.dat")
-        if self.x_test.shape[0]>0:
-            self.x_test.tofile(self.file_prefix+"x_test.dat")
-            self.y_test.tofile(self.file_prefix+"y_test.dat")
-        # print("data file was saved successfully!\n")
+    def save2file(self, train_mode):
+        print('\nbegin to save data to file...')
+        if train_mode:
+            if self.x_train.shape[0]>0:
+                self.x_train.tofile(self.file_prefix+"x_train.dat")
+                self.y_train.tofile(self.file_prefix+"y_train.dat")
+            if self.x_test.shape[0]>0:
+                self.x_test.tofile(self.file_prefix+"x_validate.dat")
+                self.y_test.tofile(self.file_prefix+"y_validate.dat")
+        else:
+            if self.x_test.shape[0]>0:
+                self.x_test.tofile(self.file_prefix+"x_test.dat")
+                self.y_test.tofile(self.file_prefix+"y_test.dat")
+        print("data files were saved successfully!\n")
 
     def get_data(self):
         return self.x_train, self.y_train, self.x_test, self.y_test
@@ -149,7 +155,7 @@ def main():
     data_process.load_image(training_mode, True)
     data_process.signal_processing(conf.do_fft, conf.fft_shape)
     data_process.prepare_shape()
-    data_process.save2file()
+    data_process.save2file(training_mode)
 
 if __name__ == "__main__":
     main()

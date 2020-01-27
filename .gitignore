@@ -1,5 +1,5 @@
-./__pycache__/*
-./data/*
-./model/*
+__pycache__/*
+data/*
+model/*
 *.pyc
 *.h5

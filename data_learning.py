@@ -29,6 +29,7 @@ def get_input_arguments():
 
 
 def get_classification_report(predict, truth, num_classes):
+    print('\nFinal Classification Report:')
     results = np.zeros((num_classes, num_classes), np.float32)
     for k in range(predict.shape[0]):
         results[truth[k], predict[k]] += 1
@@ -41,10 +42,11 @@ def get_classification_report(predict, truth, num_classes):
         print(outstr)
 
 class NeuralNetworkModel:
-    def __init__(self, data_shape, num_classes):
+    def __init__(self, input_data_shape, abs_data_shape, phase_data_shape, num_classes):
         self.model = None
         self.num_classes = num_classes
-        self.data_shape = data_shape
+        self.input_data_shape = input_data_shape
+        self.abs_data_shape, self.phase_data_shape = abs_data_shape, phase_data_shape
         self.x_train = None
         self.x_test = None
         self.y_train = None
@@ -89,19 +91,24 @@ class NeuralNetworkModel:
         return x 
 
     def cnn_model_abs_phase(self,):
-        x_input = Input(shape=self.data_shape, name="main_input", dtype="float32")
-        x_abs = Lambda(lambda y: y[...,:, 0])(x_input)
-        x_phase = Lambda(lambda y: y[...,:6, 1])(x_input)
-        x_abs = self.cnn_model_abs(x_abs)
-        x_phase = self.cnn_model_phase(x_phase)
-        x = concatenate([x_abs, x_phase])
+        x_abs = Input(shape=self.abs_data_shape, name="abs_input", dtype="float32")
+        x_phase = Input(shape=self.phase_data_shape, name="phase_input", dtype="float32")
+        print('abs input shape {}'.format(x_abs.shape))
+        print('phase input shape {}'.format(x_phase.shape))
+        x_abs_cnn = self.cnn_model_abs(x_abs)
+        x_phase_cnn = self.cnn_model_phase(x_phase)
+        x = concatenate([x_abs_cnn, x_phase_cnn])
         x = Dropout(0.5)(x)
         x = Dense(self.num_classes,
                   kernel_regularizer=regularizers.l2(0.02),
                   kernel_initializer=initializers.glorot_uniform(),
                   activation='softmax', name="main_output")(x)
-        self.model = Model(inputs=[x_input, ], outputs=x)
+        self.model = Model(inputs=[x_abs, x_phase], outputs=x)
 
+    def split_abs_phase(self, input_d):
+        input_abs = input_d[..., :self.abs_data_shape[-1], 0]
+        input_phase = input_d[..., :self.phase_data_shape[-1], 0]
+        return input_abs, input_phase        
 
     def fit_data(self,epochs):
         train_num = {}
@@ -109,34 +116,38 @@ class NeuralNetworkModel:
             train_num[m] = 0
         for m in range(self.y_train.shape[0]):
             train_num[self.y_train[m,0]] += 1
-        print("training data {}".format(train_num))
+        print("training data composition {}".format(train_num))
         class_weight = {}
         for m in range(self.num_classes):
             class_weight[m] = (self.y_train.shape[0]-train_num[m])/float(self.y_train.shape[0])
-
-        print("class weight {}".format(class_weight))
+        #print("class weight {}".format(class_weight))
+        
         self.y_train = to_categorical(self.y_train, self.num_classes)
         self.y_test = to_categorical(self.y_test, self.num_classes)
+        self.x_train_abs, self.x_train_phase = self.split_abs_phase(self.x_train)
+        self.x_test_abs, self.x_test_phase = self.split_abs_phase(self.x_test)
         Op = Adam(lr=0.001, decay=0.005, beta_1=0.9, beta_2=0.999)
-        #Op = Adam(lr=0.001, beta_1=0.9, beta_2=0.999)
         self.model.summary()
         self.model.compile(optimizer=Op, loss=['categorical_crossentropy', ],
                             metrics=[metrics.categorical_accuracy])
-        self.model.fit(x=self.x_train, y=self.y_train, 
-                       epochs=epochs, verbose=1, batch_size=256, shuffle=True,
-                       validation_data=(self.x_test, self.y_test))
+        self.model.fit(x={'abs_input': self.x_train_abs, 'phase_input':self.x_train_phase}, 
+                       y=self.y_train, epochs=epochs,
+                       verbose=1, batch_size=256, shuffle=True,
+                       validation_data=({'abs_input': self.x_test_abs, 'phase_input': self.x_test_phase}, 
+                           self.y_test))
 
     def save_model(self, model_name):
         self.model.save(model_name)
-        print("trained mode was saved as {} successfully\n".format(model_name))
+        print("\ntrained mode was saved as {} successfully\n".format(model_name))
 
     def load_model(self, model_name):
         self.model = load_model(model_name)
         print("model {} was loaded successfully\n".format(model_name))
-        self.model.summary()
+        #self.model.summary()
 
     def predict(self, data, output_label, batch_size=128):
-        p = self.model.predict(data, batch_size=batch_size)
+        data_abs, data_phase = self.split_abs_phase(data)
+        p = self.model.predict({'abs_input':data_abs,'phase_input':data_phase}, batch_size=batch_size)
         if output_label:
             p = np.argmax(p, axis=-1)
             p.astype('int8')
@@ -156,18 +167,21 @@ class NeuralNetworkModel:
 
     def get_data_from_file(self, file_prefix, data_type, training_mode):
         if training_mode:
-            filename = file_prefix + 'x_train.dat'
-            temp_image = np.fromfile(filename, dtype=data_type)
-            self.x_train = np.reshape(temp_image, (-1,) + self.data_shape)
-            filename = file_prefix + 'y_train.dat'
-            temp_label = np.fromfile(filename, dtype=np.int8)
+            train_filename = file_prefix + 'x_train.dat'
+            temp_image = np.fromfile(train_filename, dtype=data_type)
+            self.x_train = np.reshape(temp_image, (-1,) + self.input_data_shape)
+            train_label_filename = file_prefix + 'y_train.dat'
+            temp_label = np.fromfile(train_label_filename, dtype=np.int8)
             self.y_train = np.reshape(temp_label, (-1, 1))
+            test_filename = file_prefix + 'x_validate.dat'
+            test_label_filename = file_prefix + 'y_validate.dat'
+        else:
+            test_filename = file_prefix + 'x_test.dat'
+            test_label_filename = file_prefix + 'y_test.dat'
 
-        filename = file_prefix + 'x_test.dat'
-        temp_image = np.fromfile(filename, dtype=data_type)
-        self.x_test = np.reshape(temp_image, (-1,) + self.data_shape)
-        filename = file_prefix + 'y_test.dat'
-        temp_label = np.fromfile(filename, dtype=np.int8)
+        temp_image = np.fromfile(test_filename, dtype=data_type)
+        self.x_test = np.reshape(temp_image, (-1,) + self.input_data_shape)
+        temp_label = np.fromfile(test_label_filename, dtype=np.int8)
         self.y_test = np.reshape(temp_label, (-1, 1))
 
     def get_test_result(self):
@@ -189,8 +203,9 @@ class NeuralNetworkModel:
 def main():
     args = get_input_arguments()
     training_mode = args.mode
-    nn_model = NeuralNetworkModel(conf.data_shape_to_nn, conf.total_classes)
-    nn_model.get_data_from_file(conf.file_prefix, np.float32, training_mode)
+    nn_model = NeuralNetworkModel(conf.data_shape_to_nn, conf.abs_shape_to_nn,
+                                  conf.phase_shape_to_nn, conf.total_classes)
+    nn_model.get_data_from_file(conf.data_folder, np.float32, training_mode)
     if training_mode:
         nn_model.cnn_model_abs_phase()
         nn_model.fit_data(conf.epochs)

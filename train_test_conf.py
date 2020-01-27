@@ -11,7 +11,7 @@ model_folder = 'model/'
 # json file which stores configuration of every day's collected data
 save_json_filename = 'day_conf.json'
 total_days = 16
-use_exist_json = False
+use_exist_json = True
 if use_exist_json:
     with open(save_json_filename, 'r') as f:
         day_conf = json.loads(f.read())
@@ -31,6 +31,8 @@ n_timestamps = 128
 do_fft = True
 fft_shape = (n_timestamps, nsubcarrier)
 data_shape_to_nn = (50, nsubcarrier, ntx*nrx, 2)
+abs_shape_to_nn = (50, nsubcarrier, ntx*nrx)
+phase_shape_to_nn = (50, nsubcarrier, ntx*(nrx-1))
 time_offset_ratio = 1.0/20.0
 D = 1 # H step size
 step_size = 33 # CSI image step size
@@ -41,16 +43,17 @@ skip_frames = skip_time//frame_dur
 
 label = {'empty': 0, 'motion': 1}
 total_classes = 2
-draw_date = ['day1', 'day2']
+draw_date = ['day1', 'day14']
 draw_label = 'mixed'
-training_date = ['day6', 'day7', 'day8', 'day9', 'day10', 'day11']
+#training_date = ['day6', 'day7', 'day8', 'day9', 'day10', 'day11']
+training_date = ['day6', 'day7']
 training_validate_date = ['day12', 'day13']
 # make sure validation data and training data come from disjoint days
 for d in training_validate_date:
     if d in training_date:
         raise ValueError('validation date {} should not appear in train date'.format(d))
-test_date = ['day1']
+test_date = ['day14']
 
-epoch = 10
+epochs = 10
 # where to save/store the nn model
 model_name = model_folder+'wifi_presence_model.h5'

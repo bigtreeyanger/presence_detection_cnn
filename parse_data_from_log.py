@@ -5,10 +5,8 @@ from struct import unpack, calcsize
 import collections
 import time
 from log_parsing import ParseDataFile
-from os import path
 import train_test_conf as conf
 import argparse
-from global_sp_func import check_no_outlier 
 
 def get_input_arguments():
     parser = argparse.ArgumentParser()
@@ -72,7 +70,6 @@ class ConstructImage:
                     end_index = m
                     time_off = abs(end_time-start_time-(self.n_timestamps-1)*self.D*self.frame_dur)
                     if end_time < start_time: # reseting error, skip
-                        #print("end time is smaller than start time")
                         valid = False
                         offset = k*self.D+1
                         break
@@ -86,7 +83,6 @@ class ConstructImage:
             if valid:
                 final_data[valid_instance_c, ...] = temp_image
                 valid_instance_c = valid_instance_c+1
-                #v = check_no_outlier(temp_image)
             d = d+offset
         final_data = final_data[:valid_instance_c,...]
         print("total number of images: "+str(final_data.shape[0]))
@@ -113,20 +109,22 @@ class DataLogParser:
             self.out_data_test[o] = np.array([])
 
     def generate_image(self, train_date, test_date):
-        date = training_date + test_date
+        date = train_date + test_date
         for d in date:
-            #print("\nprocessing data from date {}\n".format(m))
+            day_index = int(d[3:])
             filename = self.file_prefix + d + '/'
             logfilename = self.log_file_prefix + d + '/'
             for label_name, o in self.label.items():
                 out_data_train = np.array([])
                 out_data_test = np.array([])
                 if label_name in self.conf[d]:
-                    total_tests = self.conf[m][label_name]
+                    total_tests = self.conf[d][label_name]
                 else:
                     continue
                 for i in range(1, total_tests+1):
-                    frame_data = self.parser.parse(logfilename + label_name + str(i) + ".data")
+                    # first 3 days' logs not only have csi but also payload for each received frame
+                    has_payload = day_index <= 3
+                    frame_data = self.parser.parse(logfilename + label_name + str(i) + ".data", has_payload)
                     dd = self.image_constructor.process_data(frame_data)
                     if d in test_date:
                         self.out_data_test[o] = append_array(self.out_data_test[o], dd)
@@ -135,30 +133,33 @@ class DataLogParser:
 
     def generate_image_no_label(self, date, label_name):
         for d in date:
-            #print("\nprocessing data from date {}\n".format(m))
-            #print(self.conf[m])
+            day_index = int(d[3:])
             filename = self.file_prefix + d + '/'
             logfilename = self.log_file_prefix + d + '/'
-            if label_name not in self.conf[m]:
+            if label_name not in self.conf[d]:
                 continue
-            total_tests = self.conf[m][label_name]
+            total_tests = self.conf[d][label_name]
             if total_tests == 0:
                 continue
             self.out_data_no_label[d] = {}
-            print('on date '+m)
+            print('on '+d)
             for i in range(1, total_tests+1):
-                frame_data = self.parser.parse(logfilename + label_name + str(i) + ".data")
+                # first 3 days' logs not only have csi but also payload for each received frame
+                has_payload = day_index <= 3
+                frame_data = self.parser.parse(logfilename + label_name + str(i) + ".data", has_payload)
                 dd = self.image_constructor.process_data(frame_data)
-                self.out_data_no_label[m][label_name+'_'+str(i)] = dd 
+                self.out_data_no_label[d][label_name+'_'+str(i)] = dd 
                 print('add mixed data: '+label_name+'_'+str(i))
 
     def save_data(self, train_model):
-        for k, o in self.label:
+        print('\nbegin to save data to file...')
+        for k, o in self.label.items():
             if train_model:
                 self.out_data_train[o].tofile(self.file_prefix+"training_"+str(o)+'.dat')
                 self.out_data_test[o].tofile(self.file_prefix+"training_test_"+str(o)+'.dat')
             else:
                 self.out_data_test[o].tofile(self.file_prefix+"test_"+str(o)+'.dat')
+        print("data files were saved successfully!\n")
 
     def get_data(self):
         return self.out_data_train, self.out_data_test
@@ -179,8 +180,12 @@ def main():
                                     conf.day_conf,
                                     conf.label)
     if training_mode:
+        print('in training mode')
+        print('training data from {} validation data from {}'.format(conf.training_date, conf.training_validate_date))
         data_generator.generate_image(conf.training_date, conf.training_validate_date)
     else:
+        print('in test mode')
+        print('test date from {}'.format(conf.test_date))
         data_generator.generate_image([], conf.test_date)
     data_generator.save_data(training_mode)
 
