@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import json
 from test_date_conf import parse_test_days
 
