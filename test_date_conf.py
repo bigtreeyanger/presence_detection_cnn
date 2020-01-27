@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import json
 
@@ -41,7 +42,7 @@ def parse_test_days(direc_prefix, total_days):
 
 	for i in range(1, total_days+1, 1):
 		day_index = 'day'+str(i)
-		d_path = direc_prefix+day_index+'\\'
+		d_path = direc_prefix+day_index+'/'
 		with open(d_path+'readme.txt', 'r') as f:
 			print('processing day {}'.format(i))
 			location, empty_cnt, motion_cnt, mixed_state = None, -1, -1, {}
