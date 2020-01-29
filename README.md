@@ -51,7 +51,7 @@ run the following files sequentially:
     apply signal processing steps to CSI images, prepare data for CNN
 3. ```./data_learing.py -m 1 ```
 
-    trained a name and save it as conf.model_name:
+    obtain a CNN model and save it as conf.model_name:
   
 
 ## How to test
