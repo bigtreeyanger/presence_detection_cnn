@@ -1,5 +1,5 @@
 __pycache__/*
-data/*
-model/*
+.idea/*
+*.dat
 *.pyc
 *.h5
