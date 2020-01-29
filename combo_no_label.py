@@ -47,7 +47,7 @@ def main():
     print("Get test result using existing model (in test mode)\n")
     nn_model.load_model(conf.model_name)
     for key in final_test_data:
-        new_fig = plt.figure()
+        plt.figure()
         total_test = len(final_test_data[key])
         cc = 1
         for idx in final_test_data[key]:

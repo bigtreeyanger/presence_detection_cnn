@@ -3,7 +3,6 @@
 import numpy as np
 from struct import unpack, calcsize
 import collections
-import time
 
    
 class ParseDataFile:
@@ -28,7 +27,7 @@ class ParseDataFile:
             current_format = self.packet_format._make(unpack(self.fmt,
                                                              byte_file[offset:offset+self.fmt_sz]))
             if current_format.field_len == 0:
-                #print("field length is 0")
+                # print("field length is 0")
                 offset += 2
                 continue
             if (offset + current_format.field_len) > file_size-4:

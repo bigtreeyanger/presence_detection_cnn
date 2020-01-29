@@ -1,29 +1,33 @@
 #!/usr/bin/env python3
 # import os
 import time
+
 random_seed = 1337
 import random
+
 random.seed(random_seed)
 import numpy as np
+
 np.random.seed(random_seed)
 import tensorflow as tf
+
 tf.random.set_seed(random_seed)
 
 import keras.backend as K
 from keras import metrics, regularizers, initializers
-from keras.callbacks import Callback
-from keras.models import Sequential, Model, load_model
-from keras.layers import Add, Dense, Dropout, Input, Lambda, concatenate, Flatten, BatchNormalization
+from keras.models import Model, load_model
+from keras.layers import Dense, Dropout, Input, concatenate, Flatten, BatchNormalization
 from keras.layers import AveragePooling2D, Activation, Conv2D, MaxPooling2D
-from keras.optimizers import Adam, Adamax
+from keras.optimizers import Adam
 from keras.utils import to_categorical
-import h5py
 import train_test_conf as conf
 import argparse
 
+
 def get_input_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--mode', help="if 1, run under training mode, if 0 run under test mode", type=int, default=1)
+    parser.add_argument('-m', '--mode', help="if 1, run under training mode, if 0 run under test mode", type=int,
+                        default=1)
     args = parser.parse_args()
     return args
 
@@ -34,12 +38,14 @@ def get_classification_report(predict, truth, num_classes):
     for k in range(predict.shape[0]):
         results[truth[k], predict[k]] += 1
     for k in range(num_classes):
-        print('class {} has size {:.0f} static count {:.0f} motion count {:.0f}'.format(k, np.sum(results[k,:]), results[k,0], results[k,1]))
+        print('class {} has size {:.0f} static count {:.0f} motion count {:.0f}'.format(k, np.sum(results[k, :]),
+                                                                                        results[k, 0], results[k, 1]))
     results /= (np.sum(results, axis=1, keepdims=True) + 1e-6)
     for k in range(num_classes):
-        acc = ' '.join(['{:.5f}']*num_classes)
-        outstr = 'class {}: '.format(k)+acc.format(*results[k, :])
+        acc = ' '.join(['{:.5f}'] * num_classes)
+        outstr = 'class {}: '.format(k) + acc.format(*results[k, :])
         print(outstr)
+
 
 class NeuralNetworkModel:
     def __init__(self, input_data_shape, abs_data_shape, phase_data_shape, num_classes):
@@ -53,11 +59,11 @@ class NeuralNetworkModel:
         self.y_test = None
 
     def cnn_model_phase(self, x):
-        x = Conv2D(filters=12, kernel_size=(3, 3), strides=(1,1), padding='valid',
+        x = Conv2D(filters=12, kernel_size=(3, 3), strides=(1, 1), padding='valid',
                    activation='relu', kernel_initializer=initializers.glorot_uniform())(x)
         x = BatchNormalization()(x)
         x = AveragePooling2D(pool_size=(2, 1), strides=(2, 1))(x)
-        x = Conv2D(filters=12, kernel_size=(4, 4), strides=(1,1), padding='valid',
+        x = Conv2D(filters=12, kernel_size=(4, 4), strides=(1, 1), padding='valid',
                    activation='relu', kernel_initializer=initializers.glorot_uniform())(x)
         x = BatchNormalization()(x)
         x = AveragePooling2D(pool_size=(3, 1), strides=(3, 1))(x)
@@ -69,7 +75,7 @@ class NeuralNetworkModel:
                   kernel_initializer=initializers.glorot_uniform(),
                   activation='relu')(x)
         x = BatchNormalization()(x)
-        return x 
+        return x
 
     def cnn_model_abs(self, x):
         x = Conv2D(filters=12, kernel_size=(3, 3), strides=(1, 1), padding='valid',
@@ -88,9 +94,9 @@ class NeuralNetworkModel:
                   kernel_initializer=initializers.glorot_uniform(),
                   activation='relu')(x)
         x = BatchNormalization()(x)
-        return x 
+        return x
 
-    def cnn_model_abs_phase(self,):
+    def cnn_model_abs_phase(self, ):
         x_abs = Input(shape=self.abs_data_shape, name="abs_input", dtype="float32")
         x_phase = Input(shape=self.phase_data_shape, name="phase_input", dtype="float32")
         print('abs input shape {}'.format(x_abs.shape))
@@ -108,20 +114,20 @@ class NeuralNetworkModel:
     def split_abs_phase(self, input_d):
         input_abs = input_d[..., :self.abs_data_shape[-1], 0]
         input_phase = input_d[..., :self.phase_data_shape[-1], 0]
-        return input_abs, input_phase        
+        return input_abs, input_phase
 
-    def fit_data(self,epochs):
+    def fit_data(self, epochs):
         train_num = {}
         for m in range(self.num_classes):
             train_num[m] = 0
         for m in range(self.y_train.shape[0]):
-            train_num[self.y_train[m,0]] += 1
+            train_num[self.y_train[m, 0]] += 1
         print("training data composition {}".format(train_num))
         class_weight = {}
         for m in range(self.num_classes):
-            class_weight[m] = (self.y_train.shape[0]-train_num[m])/float(self.y_train.shape[0])
-        #print("class weight {}".format(class_weight))
-        
+            class_weight[m] = (self.y_train.shape[0] - train_num[m]) / float(self.y_train.shape[0])
+        # print("class weight {}".format(class_weight))
+
         self.y_train = to_categorical(self.y_train, self.num_classes)
         self.y_test = to_categorical(self.y_test, self.num_classes)
         self.x_train_abs, self.x_train_phase = self.split_abs_phase(self.x_train)
@@ -129,12 +135,12 @@ class NeuralNetworkModel:
         Op = Adam(lr=0.001, decay=0.005, beta_1=0.9, beta_2=0.999)
         self.model.summary()
         self.model.compile(optimizer=Op, loss=['categorical_crossentropy', ],
-                            metrics=[metrics.categorical_accuracy])
-        self.model.fit(x={'abs_input': self.x_train_abs, 'phase_input':self.x_train_phase}, 
+                           metrics=[metrics.categorical_accuracy])
+        self.model.fit(x={'abs_input': self.x_train_abs, 'phase_input': self.x_train_phase},
                        y=self.y_train, epochs=epochs,
                        verbose=1, batch_size=256, shuffle=True,
-                       validation_data=({'abs_input': self.x_test_abs, 'phase_input': self.x_test_phase}, 
-                           self.y_test))
+                       validation_data=({'abs_input': self.x_test_abs, 'phase_input': self.x_test_phase},
+                                        self.y_test))
 
     def save_model(self, model_name):
         self.model.save(model_name)
@@ -143,17 +149,17 @@ class NeuralNetworkModel:
     def load_model(self, model_name):
         self.model = load_model(model_name)
         print("model {} was loaded successfully\n".format(model_name))
-        #self.model.summary()
+        # self.model.summary()
 
     def predict(self, data, output_label, batch_size=128):
         data_abs, data_phase = self.split_abs_phase(data)
-        p = self.model.predict({'abs_input':data_abs,'phase_input':data_phase}, batch_size=batch_size)
+        p = self.model.predict({'abs_input': data_abs, 'phase_input': data_phase}, batch_size=batch_size)
         if output_label:
             p = np.argmax(p, axis=-1)
             p.astype('int8')
         else:
             p = p[:, -1]
-            p. astype('float32')
+            p.astype('float32')
         return p
 
     def end(self):
@@ -198,7 +204,8 @@ class NeuralNetworkModel:
 
     def save_result(self, p, filename):
         p.tofile(filename)
-        print("test result was saved to "+filename+"\n")
+        print("test result was saved to " + filename + "\n")
+
 
 def main():
     args = get_input_arguments()
@@ -212,8 +219,9 @@ def main():
         nn_model.save_model(conf.model_name)
     else:
         nn_model.load_model(conf.model_name)
-        result = nn_model.get_test_result()  
+        result = nn_model.get_test_result()
     nn_model.end()
+
 
 if __name__ == "__main__":
     main()

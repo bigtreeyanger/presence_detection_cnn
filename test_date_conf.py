@@ -2,6 +2,7 @@
 import os
 import json
 
+
 def parse_test_days(direc_prefix, total_days):
     '''
     Description:
@@ -39,10 +40,10 @@ def parse_test_days(direc_prefix, total_days):
     # mapping data to label
     label = {'empty': 0, 'motion': 1}
 
-    for i in range(1, total_days+1, 1):
-        day_index = 'day'+str(i)
-        d_path = direc_prefix+day_index+'/'
-        with open(d_path+'readme.txt', 'r') as f:
+    for i in range(1, total_days + 1, 1):
+        day_index = 'day' + str(i)
+        d_path = direc_prefix + day_index + '/'
+        with open(d_path + 'readme.txt', 'r') as f:
             print('processing day {}'.format(i))
             location, empty_cnt, motion_cnt, mixed_cnt, mixed_state = None, -1, -1, 0, []
             for l in f:
@@ -58,7 +59,7 @@ def parse_test_days(direc_prefix, total_days):
                 if 'mixed' in m[0]:
                     mixed_cnt += 1
                     idx = int(m[0][-2])
-                    mixed_index = 'mixed'+str(idx)
+                    mixed_index = 'mixed' + str(idx)
                     status = m[1:]
                     mixed_state.append([])
                     for s in status:
@@ -72,14 +73,14 @@ def parse_test_days(direc_prefix, total_days):
             raise Exception('invalid info  {} {} {}'.format(location, empty_cnt, motion_cnt))
 
         day_conf[day_index] = {'location': location, 'motion': motion_cnt,
-                'empty': empty_cnt, 'mixed': mixed_cnt, 'mixed_truth': mixed_state}
+                               'empty': empty_cnt, 'mixed': mixed_cnt, 'mixed_truth': mixed_state}
         print(day_conf[day_index])
         print('\n')
         for k, v in day_conf[day_index].items():
             if k == 'location' or k == 'mixed_truth':
                 continue
-            for j in range(1, v+1, 1):
-                f_name = d_path+k+str(j)+'.data'
+            for j in range(1, v + 1, 1):
+                f_name = d_path + k + str(j) + '.data'
                 if not os.path.exists(f_name):
                     print("{} doesn't exist".format(f_name))
     return day_conf
@@ -94,13 +95,9 @@ def main():
     save_json_filename = 'day_conf.json'
     # save day_conf to json file
     with open(save_json_filename, 'w') as f:
-            f.write(to_json)
-    print('json file was saved as '+save_json_filename)	
-
-
+        f.write(to_json)
+    print('json file was saved as ' + save_json_filename)
 
 
 if __name__ == "__main__":
-	main()
-
-
+    main()
