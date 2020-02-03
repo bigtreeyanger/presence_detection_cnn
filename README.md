@@ -79,25 +79,24 @@ date used for testing the trained model is specified in train_test_conf as
 ```
 test_date = ['day14']
 ```
-## method I: 
-if the user want to save intermediate data files, please execute the above three 
-steps but each with input argument ```'-m 0'```
+1. method I: if the user want to save intermediate data files, please execute the above three 
+    steps but each with input argument ```'-m 0'```
 
-## method II: 
-if the user just needs the detection results without saving intermediate data files, please run 
-```./wifi_process_combo.py -m 0```
+2. method II: 
+    if the user just needs the detection results without saving intermediate data files, please run 
+    ```./wifi_process_combo.py -m 0```
 
-## method III
-To evaluate the model using mixture runs, please first specify test date in config file
+3. method III
+    To evaluate the model using mixture runs, please first specify test date in config file
 
-```
-draw_date = ['day1', 'day14']
-draw_label = 'mixed'
-```
-then run ```./combo_no_label.py ```
+    ```
+    draw_date = ['day1', 'day14']
+    draw_label = 'mixed'
+    ```
+    then run ```./combo_no_label.py ```
 
-Note: if the user want to visualize detection results from other labels, just change conf.draw_label 
-to other values such as 'motion' or 'static'
+    Note: if the user want to visualize detection results from other labels, just change conf.draw_label 
+    to other values such as 'motion' or 'static'
 
 
 
