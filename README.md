@@ -31,7 +31,8 @@ model_folder = 'model/'
 
 # Datasets
 All 16 days' data are available in the following link:
-insert link to the google drive here
+
+https://drive.google.com/open?id=1t5fnPxIK5dpCVhSNPOnjNcPIWd0COt1U
 
 
 Ground truth of the dataset is stored in day_conf.json. For example, ground truth of 
