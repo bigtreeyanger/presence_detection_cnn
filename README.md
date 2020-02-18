@@ -5,7 +5,7 @@ Presence Detection Using CNN
 
 This repository contains datasets and implementation code for the paper:
 
-"Harvesting Ambient RF for Presence Detection Through Deep Learning." Yang Liu, Tiexing Wang, Yuexin Jiang and Biao Chen. arXiv: 2002.05770 [cs.LG]
+"Harvesting Ambient RF for Presence Detection Through Deep Learning." Yang Liu, Tiexing Wang, Yuexin Jiang and Biao Chen. arXiv link: https://arxiv.org/abs/2002.05770
 
 Please cite this paper if you use the code/data in this repository as part of a published research project.
 
