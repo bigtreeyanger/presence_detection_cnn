@@ -3,7 +3,11 @@ Presence Detection Using CNN
 
 # Getting Started
 
-This repository contains datasets and implementation code for human presence detection using WiFi signals.
+This repository contains datasets and implementation code for the paper:
+
+"Harvesting Ambient RF for Presence Detection Through Deep Learning." Yang Liu, Tiexing Wang, Yuexin Jiang and Biao Chen. arXiv: 2002.05770 [cs.LG]
+
+Please cite this paper if you use the code/data in this repository as part of a published research project.
 
 These instructions will walk you through how to access the datasets and how to get the project up and running on your local machine.
 
