@@ -3,7 +3,7 @@ import os
 import json
 
 
-def parse_test_days(direc_prefix, total_days):
+def parse_test_days(direc_prefix, total_days, exclude_days):
     '''
     Description:
     generate a dictionary that stores the configurations of each day's collected data
@@ -41,22 +41,19 @@ def parse_test_days(direc_prefix, total_days):
     label = {'empty': 0, 'motion': 1}
 
     for i in range(1, total_days + 1, 1):
+        if i in exclude_days: continue
         day_index = 'day' + str(i)
         d_path = direc_prefix + day_index + '/'
         with open(d_path + 'readme.txt', 'r') as f:
             print('processing day {}'.format(i))
-            location, empty_cnt, motion_cnt, mixed_cnt, mixed_state = None, -1, -1, 0, []
+            location, cases, mixed_cnt, mixed_state = None, {}, 0, []
             for l in f:
                 m = l.split()
                 if len(m) == 0:
                     continue
                 if 'Location' in m[0]:
                     location = m[-1]
-                if 'motion' in m[0]:
-                    motion_cnt = int(m[-1])
-                if 'empty' in m[0]:
-                    empty_cnt = int(m[-1])
-                if 'mixed' in m[0]:
+                elif 'mixed' in m[0]:
                     mixed_cnt += 1
                     idx = int(m[0][-2])
                     mixed_index = 'mixed' + str(idx)
@@ -69,11 +66,16 @@ def parse_test_days(direc_prefix, total_days):
                             mixed_state[-1].append(label['motion'])
                         else:
                             print('undefined status in {}'.format(m[0]))
-        if location == None or empty_cnt == -1 or motion_cnt == -1:
-            raise Exception('invalid info  {} {} {}'.format(location, empty_cnt, motion_cnt))
+                else:
+                    case_type = m[0][:-1]
+                    case_cnt = int(m[-1])
+                    cases.update({case_type: case_cnt})
 
-        day_conf[day_index] = {'location': location, 'motion': motion_cnt,
-                               'empty': empty_cnt, 'mixed': mixed_cnt, 'mixed_truth': mixed_state}
+        if location == None or cases == {}:
+            raise Exception('invalid info  {} {}'.format(location, cases))
+
+        day_conf[day_index] = {'location': location, 'mixed': mixed_cnt, 'mixed_truth': mixed_state}
+        day_conf[day_index].update(cases)
         print(day_conf[day_index])
         print('\n')
         for k, v in day_conf[day_index].items():
@@ -87,9 +89,10 @@ def parse_test_days(direc_prefix, total_days):
 
 
 def main():
-    total_days = 16
-    data_folder = '/root/share/upload_wifi_data/'
-    day_conf = parse_test_days(data_folder, total_days)
+    total_days = 24
+    exclude_days = [17, 18, 19]
+    data_folder = 'G://wifi_Test//upload_wifi_data/'
+    day_conf = parse_test_days(data_folder, total_days, exclude_days)
     to_json = json.dumps(day_conf)
     # json filename
     save_json_filename = 'day_conf.json'
