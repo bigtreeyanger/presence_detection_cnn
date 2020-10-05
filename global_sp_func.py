@@ -65,5 +65,9 @@ def sp_func(d, do_fft, fft_shape):
     else:
         out = np.zeros((ampl.shape + (2,)), dtype=np.float32)
         out[..., 0] = ampl
-        out[..., 1] = phase
+        # phase unwrapping
+        for i in range(0, total_instance, 5000):
+            num = min(total_instance-i, 5000)
+            unwrap_phase = np.unwrap(phase[i:i+num, ...],axis=1)
+            out[i:i+num,...,:unwrap_phase.shape[-1], 1] = unwrap_phase
         return out
