@@ -19,7 +19,7 @@ def main():
                                     conf.skip_frames,
                                     conf.time_offset_ratio,
                                     conf.day_conf,
-                                    conf.label)
+                                    conf.train_label)
     data_generator.generate_image_no_label(conf.draw_date, conf.draw_label)
     # train_data, test_data: classes (key: label, value: images under this label)
     test_data = data_generator.get_data_no_label()
@@ -32,7 +32,7 @@ def main():
                                     conf.ntx_max, conf.ntx, conf.nrx_max, 
                                     conf.nrx, conf.nsubcarrier_max, conf.nsubcarrier,
                                     conf.data_shape_to_nn,
-                                    conf.data_folder,conf.label)
+                                    conf.data_folder,conf.train_label)
     data_process.add_image_no_label(test_data)
     data_process.signal_processing(conf.do_fft, conf.fft_shape)
     data_process.prepare_shape()
