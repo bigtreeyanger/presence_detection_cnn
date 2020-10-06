@@ -3,14 +3,14 @@ import json
 from test_date_conf import parse_test_days
 
 # folder directory where all the data is stored
-log_folder = '/root/share/upload_wifi_data/'
+log_folder = 'G://wifi_test//upload_wifi_data//'
 # folder directory used to store processed data
 data_folder = 'data/'
 # folder directory used to store model
 model_folder = 'model/'
 # json file which stores configuration of every day's collected data
 save_json_filename = 'day_conf.json'
-total_days = 16
+total_days = 24
 use_exist_json = True
 if use_exist_json:
     with open(save_json_filename, 'r') as f:
@@ -41,18 +41,24 @@ skip_time = 5000 # milliseconds
 # exclude first and last skip_frames in the current run
 skip_frames = skip_time//frame_dur
 
-label = {'empty': 0, 'motion': 1}
+
+train_label = {'empty': 0, 'motion':1} # key: types of runs; value: class (0 or 1) it belongs
 total_classes = 2
-draw_date = ['day1', 'day14']
-draw_label = 'mixed'
-#training_date = ['day6', 'day7', 'day8', 'day9', 'day10', 'day11']
-training_date = ['day6', 'day7']
-training_validate_date = ['day12', 'day13']
+draw_date = ['day24', ]
+draw_label = 'living_room'
+training_date = ['day9', 'day10', 'day11']
+training_validate_date = ['day15']
 # make sure validation data and training data come from disjoint days
 for d in training_validate_date:
     if d in training_date:
         raise ValueError('validation date {} should not appear in train date'.format(d))
-test_date = ['day14']
+test_date = ['day15']
+if int(test_date[0][3:]) >= 20:
+    # in Apartment
+    test_label = {'empty': 0, 'living_room': 1, 'kitchen': 2, 'bedroomI': 3, 'bedroomII': 4}
+else:
+    # in LabI or LabII
+    test_label = {'empty': 0, 'motion': 1}
 
 epochs = 10
 # where to save/store the nn model
