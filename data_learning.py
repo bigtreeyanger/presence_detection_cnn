@@ -11,7 +11,6 @@ import numpy as np
 np.random.seed(random_seed)
 import tensorflow as tf
 
-tf.random.set_seed(random_seed)
 
 import keras.backend as K
 from keras import metrics, regularizers, initializers
@@ -26,24 +25,24 @@ import argparse
 
 def get_input_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--mode', help="if 1, run under training mode, if 0 run under test mode", type=int,
-                        default=1)
+    parser.add_argument('-m', '--mode', help="if Y, run under training mode, if N run under test mode", type=str,
+                        default='Y')
     args = parser.parse_args()
     return args
 
 
-def get_classification_report(predict, truth, num_classes):
+def get_classification_report(predict, truth, num_classes, label_mapping):
     print('\nFinal Classification Report:')
-    results = np.zeros((num_classes, num_classes), np.float32)
+    results = np.zeros((len(label_mapping), num_classes), np.float32)
     for k in range(predict.shape[0]):
         results[truth[k], predict[k]] += 1
-    for k in range(num_classes):
-        print('class {} has size {:.0f} static count {:.0f} motion count {:.0f}'.format(k, np.sum(results[k, :]),
+    for name, k in label_mapping.items():
+        print('label {}: has size {:.0f} static count {:.0f} motion count {:.0f}'.format(name, np.sum(results[k, :]),
                                                                                         results[k, 0], results[k, 1]))
+    print('\n')
     results /= (np.sum(results, axis=1, keepdims=True) + 1e-6)
-    for k in range(num_classes):
-        acc = ' '.join(['{:.5f}'] * num_classes)
-        outstr = 'class {}: '.format(k) + acc.format(*results[k, :])
+    for name, k in label_mapping.items():
+        outstr = 'label {} class {} acc {:.4f}'.format(name, int(k>=1), results[k, int(k>=1)]) 
         print(outstr)
 
 
@@ -190,9 +189,9 @@ class NeuralNetworkModel:
         temp_label = np.fromfile(test_label_filename, dtype=np.int8)
         self.y_test = np.reshape(temp_label, (-1, 1))
 
-    def get_test_result(self):
+    def get_test_result(self, label_mapping={'empty': 0, 'motion': 1}):
         p = self.predict(self.x_test, output_label=True, batch_size=128)
-        get_classification_report(p, self.y_test, self.num_classes)
+        get_classification_report(p, self.y_test, self.num_classes, label_mapping)
         return p
 
     def get_no_label_result(self, dd, output_label=True, batch_size=128):
@@ -209,17 +208,26 @@ class NeuralNetworkModel:
 
 def main():
     args = get_input_arguments()
-    training_mode = args.mode
+    training_mode = (args.mode == 'Y')
+    if args.mode not in ['Y', 'N']:
+        raise ValueError('Invalid input value for m should be either Y or N')
+    data_folder = conf.data_folder
+    if training_mode:
+        label = conf.train_label
+        data_folder += "training/"
+    else:
+        label = conf.test_label
+        data_folder += "test/"
     nn_model = NeuralNetworkModel(conf.data_shape_to_nn, conf.abs_shape_to_nn,
                                   conf.phase_shape_to_nn, conf.total_classes)
-    nn_model.get_data_from_file(conf.data_folder, np.float32, training_mode)
+    nn_model.get_data_from_file(data_folder, np.float32, training_mode)
     if training_mode:
         nn_model.cnn_model_abs_phase()
         nn_model.fit_data(conf.epochs)
         nn_model.save_model(conf.model_name)
     else:
         nn_model.load_model(conf.model_name)
-        result = nn_model.get_test_result()
+        result = nn_model.get_test_result(label)
     nn_model.end()
 
 

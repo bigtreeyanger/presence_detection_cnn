@@ -8,8 +8,8 @@ from global_sp_func import sp_func, reshape_func, shape_conversion, append_array
 
 def get_input_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--mode', help="if 1, run under training mode, if 0 run under test mode", type=int,
-                        default=1)
+    parser.add_argument('-m', '--mode', help="if Y, run under training mode, if N run under test mode", type=str,
+                        default='Y')
     args = parser.parse_args()
     return args
 
@@ -145,12 +145,21 @@ class DataPreprocess:
 
 def main():
     args = get_input_arguments()
-    training_mode = args.mode
+    training_mode = (args.mode == 'Y')
+    if args.mode not in ['Y', 'N']:
+        raise ValueError('Invalid input value for m should be either Y or N')
+    data_folder = conf.data_folder
+    if training_mode:
+        label = conf.train_label
+        data_folder += "training/"
+    else:
+        label = conf.test_label
+        data_folder += "test/"
     data_process = DataPreprocess(conf.n_timestamps, conf.D, conf.step_size,
                                   conf.ntx_max, conf.ntx, conf.nrx_max,
                                   conf.nrx, conf.nsubcarrier_max, conf.nsubcarrier,
                                   conf.data_shape_to_nn,
-                                  conf.data_folder, conf.label)
+                                  data_folder, label)
     data_process.load_image(training_mode, True)
     data_process.signal_processing(conf.do_fft, conf.fft_shape)
     data_process.prepare_shape()

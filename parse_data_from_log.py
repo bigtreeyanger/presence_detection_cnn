@@ -8,8 +8,8 @@ import argparse
 
 def get_input_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--mode', help="if 1, run under training mode, if 0 run under test mode", type=int,
-                        default=1)
+    parser.add_argument('-m', '--mode', help="if 1, run under training mode, if 0 run under test mode", type=str,
+                        default='Y')
     args = parser.parse_args()
     return args
 
@@ -33,7 +33,7 @@ class ConstructImage:
         self.step_size = step_size
         self.skip_frames = skip_frames
         self.time_offset_tolerance = self.n_timestamps * offset_ratio * self.D * self.frame_dur
-        print('allowed time offset {}'.format(self.time_offset_tolerance))
+        # print('allowed time offset {}'.format(self.time_offset_tolerance))
 
     def process_data(self, frame_data):
         frame_data = frame_data[self.skip_frames:-self.skip_frames]
@@ -49,7 +49,7 @@ class ConstructImage:
             temp_image = np.zeros((self.n_timestamps, self.nrx_max, self.ntx_max, self.n_tones), dtype=np.complex64)
             valid = True
             offset = self.step_size
-            start_time, end_time = 0
+            start_time = end_time = 0
             time_index = []
             for k in range(self.n_timestamps):
                 m = d + k * self.D
@@ -162,18 +162,27 @@ class DataLogParser:
 
 def main():
     args = get_input_arguments()
-    training_mode = args.mode
+    training_mode = (args.mode == 'Y')
+    if args.mode not in ['Y', 'N']:
+        raise ValueError('Invalid input value for m should be either Y or N')
+    data_folder = conf.data_folder
+    if training_mode:
+        label = conf.train_label
+        data_folder += "training/"
+    else:
+        label = conf.test_label
+        data_folder += "test/"
     data_generator = DataLogParser(conf.n_timestamps, conf.D, conf.step_size,
                                    conf.ntx_max, conf.nrx_max,
-                                   conf.nsubcarrier_max, conf.data_folder,
+                                   conf.nsubcarrier_max, data_folder,
                                    conf.log_folder,
                                    conf.skip_frames,
                                    conf.time_offset_ratio,
                                    conf.day_conf,
-                                   conf.label)
+                                   label)
     if training_mode:
         print('in training mode')
-        print('training data from {} validation data from {}'.format(conf.training_date, conf.training_validate_date))
+        print('training data from {} \nvalidation data from {}\n'.format(conf.training_date, conf.training_validate_date))
         data_generator.generate_image(conf.training_date, conf.training_validate_date)
     else:
         print('in test mode')
