@@ -26,14 +26,17 @@ def parse_test_days(direc_prefix, total_days, exclude_days):
                     key (str) -- "location"
                     value (str) -- where the experiment was conducted
                     key (str) -- 'motion'
-                    value (int) -- total number of motion tests conducted
+                    value (int) -- total number of motion tests conducted (LabI or LabII)
+                    key (str) -- 'living_room' or 'kitchen' or 'bedroomI' or 'bedroomII'
+                    value (int) -- total number of motion tests conducted in different rooms  (Apartment)
                     key (str) -- 'empty'
                     value (int) -- total number of tests conducted when there is nobody inside the lab
                     key (str) -- 'mixed'
-                    value (int) -- total number of mixed runs
+                    value (int) -- total number of mixed runs (LabI or LabII)
                     key (str) -- 'mixed_truth'
                     value (list) -- each entry of the list is also a list that
                                     contains the ground truth of this mixed run.
+
     '''
 
     day_conf = {}
