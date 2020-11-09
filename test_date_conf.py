@@ -26,13 +26,13 @@ def parse_test_days(direc_prefix, total_days, exclude_days):
                     key (str) -- "location"
                     value (str) -- where the experiment was conducted
                     key (str) -- 'motion'
-                    value (int) -- total number of motion tests conducted (LabI or LabII)
+                    value (int) -- total number of motion tests conducted (valid for LabI or LabII)
                     key (str) -- 'living_room' or 'kitchen' or 'bedroomI' or 'bedroomII'
-                    value (int) -- total number of motion tests conducted in different rooms  (Apartment)
+                    value (int) -- total number of motion tests conducted in different rooms  (valid for Apartment)
                     key (str) -- 'empty'
-                    value (int) -- total number of tests conducted when there is nobody inside the lab
+                    value (int) -- total number of tests conducted when there is nobody inside the environment
                     key (str) -- 'mixed'
-                    value (int) -- total number of mixed runs (LabI or LabII)
+                    value (int) -- total number of mixed runs (no mixed runs were conducted in Apartment)
                     key (str) -- 'mixed_truth'
                     value (list) -- each entry of the list is also a list that
                                     contains the ground truth of this mixed run.
@@ -87,14 +87,14 @@ def parse_test_days(direc_prefix, total_days, exclude_days):
             for j in range(1, v + 1, 1):
                 f_name = d_path + k + str(j) + '.data'
                 if not os.path.exists(f_name):
-                    print("{} doesn't exist".format(f_name))
+                    print("{} doesn't exist !!!!".format(f_name))
     return day_conf
 
 
 def main():
     total_days = 24
     exclude_days = [17, 18, 19]
-    data_folder = 'G://wifi_Test//upload_wifi_data/'
+    data_folder = '/root/share/upload_wifi_data/'
     day_conf = parse_test_days(data_folder, total_days, exclude_days)
     to_json = json.dumps(day_conf)
     # json filename
