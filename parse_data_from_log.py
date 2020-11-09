@@ -141,7 +141,7 @@ class DataLogParser:
                 frame_data = self.parser.parse(logfilename + label_name + str(i) + ".data", has_payload)
                 dd = self.image_constructor.process_data(frame_data)
                 self.out_data_no_label[d][label_name + '_' + str(i)] = dd
-                print('add mixed data: ' + label_name + '_' + str(i))
+                print('add data from label: {} with index {}'.format(label_name,i))
 
     def save_data(self, train_model):
         print('\nbegin to save data to file...')
@@ -183,10 +183,12 @@ def main():
     if training_mode:
         print('in training mode')
         print('training data from {} \nvalidation data from {}\n'.format(conf.training_date, conf.training_validate_date))
+        print('training label is {}\n'.format(label))
         data_generator.generate_image(conf.training_date, conf.training_validate_date)
     else:
         print('in test mode')
         print('test date from {}'.format(conf.test_date))
+        print('test label is {}\n'.format(label))
         data_generator.generate_image([], conf.test_date)
     data_generator.save_data(training_mode)
 
