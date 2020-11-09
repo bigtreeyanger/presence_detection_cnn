@@ -15,7 +15,7 @@ import tensorflow as tf
 import keras.backend as K
 from keras import metrics, regularizers, initializers
 from keras.models import Model, load_model
-from keras.layers import Dense, Dropout, Input, concatenate, Flatten, BatchNormalization
+from keras.layers import Lambda, Dense, Dropout, Input, concatenate, Flatten, BatchNormalization
 from keras.layers import AveragePooling2D, Activation, Conv2D, MaxPooling2D
 from keras.optimizers import Adam
 from keras.utils import to_categorical
@@ -42,7 +42,7 @@ def get_classification_report(predict, truth, num_classes, label_mapping):
     print('\n')
     results /= (np.sum(results, axis=1, keepdims=True) + 1e-6)
     for name, k in label_mapping.items():
-        outstr = 'label {} class {} acc {:.4f}'.format(name, int(k>=1), results[k, int(k>=1)]) 
+        outstr = 'label {}: class {} acc {:.4f}'.format(name, int(k>=1), results[k, int(k>=1)]) 
         print(outstr)
 
 
@@ -96,8 +96,13 @@ class NeuralNetworkModel:
         return x
 
     def cnn_model_abs_phase(self, ):
-        x_abs = Input(shape=self.abs_data_shape, name="abs_input", dtype="float32")
-        x_phase = Input(shape=self.phase_data_shape, name="phase_input", dtype="float32")
+        x_input = Input(shape=self.input_data_shape, name="main_input", dtype="float32")
+        # split CSI images into magnitude images and phase images
+        x_abs = Lambda(lambda y: y[..., 0], name='abs_input')(x_input)
+        # TODO: need to remove this hardcoded 6 here (hardcode it since I haven't figured a way to 
+        # save a constant into a NN model successfully). 
+        # This value should be set to self.phase_data_shape[-1](in 3X3 MIMO case, it equals to 6) 
+        x_phase = Lambda(lambda y: y[..., :6, 1], name='phase_input')(x_input)
         print('abs input shape {}'.format(x_abs.shape))
         print('phase input shape {}'.format(x_phase.shape))
         x_abs_cnn = self.cnn_model_abs(x_abs)
@@ -108,39 +113,34 @@ class NeuralNetworkModel:
                   kernel_regularizer=regularizers.l2(0.02),
                   kernel_initializer=initializers.glorot_uniform(),
                   activation='softmax', name="main_output")(x)
-        self.model = Model(inputs=[x_abs, x_phase], outputs=x)
+        self.model = Model(inputs=[x_input, ], outputs=x)
 
-    def split_abs_phase(self, input_d):
-        input_abs = input_d[..., :self.abs_data_shape[-1], 0]
-        input_phase = input_d[..., :self.phase_data_shape[-1], 0]
-        return input_abs, input_phase
 
     def fit_data(self, epochs):
-        train_num = {}
+        train_num, test_num = {}, {}
         for m in range(self.num_classes):
             train_num[m] = 0
+            test_num[m] = 0
         for m in range(self.y_train.shape[0]):
             train_num[self.y_train[m, 0]] += 1
+        for m in range(self.y_test.shape[0]):
+            test_num[self.y_test[m, 0]] += 1
+        
         print("training data composition {}".format(train_num))
-        class_weight = {}
-        for m in range(self.num_classes):
-            class_weight[m] = (self.y_train.shape[0] - train_num[m]) / float(self.y_train.shape[0])
-        # print("class weight {}".format(class_weight))
+        print("validating data composition {}".format(test_num))
+
 
         self.y_train = to_categorical(self.y_train, self.num_classes)
         self.y_test = to_categorical(self.y_test, self.num_classes)
-        self.x_train_abs, self.x_train_phase = self.split_abs_phase(self.x_train)
-        self.x_test_abs, self.x_test_phase = self.split_abs_phase(self.x_test)
         Op = Adam(lr=0.001, decay=0.005, beta_1=0.9, beta_2=0.999)
         self.model.summary()
         self.model.compile(optimizer=Op, loss=['categorical_crossentropy', ],
                            metrics=[metrics.categorical_accuracy])
-        self.model.fit(x={'abs_input': self.x_train_abs, 'phase_input': self.x_train_phase},
-                       y=self.y_train, epochs=epochs,
+        self.model.fit(x=self.x_train, y=self.y_train,
+                       epochs=epochs,
                        verbose=1, batch_size=256, shuffle=True,
-                       validation_data=({'abs_input': self.x_test_abs, 'phase_input': self.x_test_phase},
-                                        self.y_test))
-
+                       validation_data=(self.x_test, self.y_test))
+        
     def save_model(self, model_name):
         self.model.save(model_name)
         print("\ntrained mode was saved as {} successfully\n".format(model_name))
@@ -150,15 +150,14 @@ class NeuralNetworkModel:
         print("model {} was loaded successfully\n".format(model_name))
         # self.model.summary()
 
-    def predict(self, data, output_label, batch_size=128):
-        data_abs, data_phase = self.split_abs_phase(data)
-        p = self.model.predict({'abs_input': data_abs, 'phase_input': data_phase}, batch_size=batch_size)
+    def predict(self, data, output_label, batch_size=1):
+        p = self.model.predict(data, batch_size=batch_size)
         if output_label:
             p = np.argmax(p, axis=-1)
-            p.astype('int8')
+            p = p.astype('int8')
         else:
             p = p[:, -1]
-            p.astype('float32')
+            p = p.astype('float32')
         return p
 
     def end(self):
@@ -190,11 +189,11 @@ class NeuralNetworkModel:
         self.y_test = np.reshape(temp_label, (-1, 1))
 
     def get_test_result(self, label_mapping={'empty': 0, 'motion': 1}):
-        p = self.predict(self.x_test, output_label=True, batch_size=128)
+        p = self.predict(self.x_test, output_label=True, batch_size=1)
         get_classification_report(p, self.y_test, self.num_classes, label_mapping)
         return p
 
-    def get_no_label_result(self, dd, output_label=True, batch_size=128):
+    def get_no_label_result(self, dd, output_label=True, batch_size=1):
         p = self.predict(dd, output_label, batch_size=batch_size)
         return p
 
