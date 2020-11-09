@@ -25,9 +25,15 @@ def main():
     data_folder = conf.data_folder
     if training_mode:
         label = conf.train_label
+        print('in training mode')
+        print('training data from {} \nvalidation data from {}\n'.format(conf.training_date, conf.training_validate_date))
+        print('training label is {}\n'.format(label))
         data_folder += "training/"
     else:
         label = conf.test_label
+        print('in test mode')
+        print('test date from {}'.format(conf.test_date))
+        print('test label is {}\n'.format(label))
         data_folder += "test/"
     ##################################################
     # parse data from original data & construct images
