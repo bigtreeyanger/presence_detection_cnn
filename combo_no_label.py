@@ -23,7 +23,9 @@ def main():
     data_generator.generate_image_no_label(conf.draw_date, conf.draw_label)
     # train_data, test_data: classes (key: label, value: images under this label)
     test_data = data_generator.get_data_no_label()
-
+    if len(test_data) == 0:
+        print('find no data to draw under date {} and label {}!!!'.format(conf.draw_date, conf.draw_label))
+        return
     ##################################################
     # apply signal processing blocks to images
     ##################################################
