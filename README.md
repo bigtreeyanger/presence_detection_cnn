@@ -49,7 +49,7 @@ https://drive.google.com/open?id=1t5fnPxIK5dpCVhSNPOnjNcPIWd0COt1U
 day index | location | types of run | 
 --- | --- | --- | 
 1-3 | LabI | 'empty', 'motion', 'mixed' | 
-4-19 | Lab II | 'empty', 'motion', 'mixed' |
+4-19 | LabII | 'empty', 'motion', 'mixed' |
 20-24 | Apartment | 'empty', 'living_room', 'kitchen', 'bedroomI', 'bedroomII'|
 
 
