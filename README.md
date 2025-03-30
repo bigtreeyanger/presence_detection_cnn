@@ -41,7 +41,7 @@ log_folder = '/root/share/upload_wifi_data/'
 # Datasets
 All 24 days' data are available in the following link, please download and unzip them:
 
-https://drive.google.com/open?id=1t5fnPxIK5dpCVhSNPOnjNcPIWd0COt1U
+https://drive.google.com/drive/folders/1yGchSK7DeoR--2ZkNItTEYNV3tc9RUyn?usp=share_link
 
 **Note**: data on day 17-19 is not provided since on these three days, we conducted real-time comparsion with a PIR sensor and CSIs were thus not recorded. 
 
